@@ -1,0 +1,123 @@
+import java.util.Scanner;
+
+public class Main {
+	
+	public static void main(String Args[]){
+		double AtkBaseEqMin,AtkBaseEqMax,DefBaseEq,UpArma,UpArmor,AtkBasePg,AtkEff,AtkSetSP,BonusAtkSetSP,AtkPerfezione,AtkSkill,AumentoDannoEq,AtkMigliorato,AtkPvP,RidDefPvP,DannoTot;
+		double DefBasePg,DefEff,DefSetSP,DefPerfezione,DefBuff,DefBuffPetPvP,DefBuffPet,DefVestitoNosmall,DefMigliorato,DefPvP,DefTotRuna;
+		double fata;
+		double Critico,DimCritico;
+		
+		Scanner in=new Scanner(System.in);
+		
+		System.out.print("inserisci attacco base del pg attaccante senza equip:");
+		AtkBasePg=in.nextInt();
+		System.out.print("inserisci def base del pg difensore  senza equip:");
+		DefBasePg=in.nextDouble();
+		System.out.print("inserisci up arma del pg attaccante:");
+		UpArma=in.nextDouble();
+		System.out.print("inserisci up armor del pg difensore:");
+		UpArmor=in.nextDouble();
+		System.out.print("inserisci attacco base dell'arma minima attaccante:");
+		AtkBaseEqMin=in.nextDouble();
+		System.out.print("inserisci attacco base dell'arma massima attaccante:");
+		AtkBaseEqMax=in.nextDouble();
+		System.out.print("inserisci difesa dell'armor:");
+		DefBaseEq=in.nextDouble();
+		System.out.print("aumento danno equip come effetto:");
+		AtkEff=in.nextDouble();
+		System.out.println("Atk derivante dal set della SP:");
+		AtkSetSP=in.nextDouble();
+		System.out.println("Atk derivante dal bonus set della SP:");
+		BonusAtkSetSP=in.nextDouble();
+		System.out.println("Atk derivante dalla perfezione della SP:");
+		AtkPerfezione=in.nextDouble();
+		System.out.println("Atk derivante dalla skill:");
+		AtkSkill=in.nextDouble();
+		System.out.println("Danno aumentato di equip (bug):");
+		AumentoDannoEq=in.nextDouble();
+		if(AumentoDannoEq>3) AumentoDannoEq/=100;
+		System.out.println("Def aumentata dagli effetti di equip:");
+		DefEff=in.nextDouble();
+		System.out.println("def derivante dal set della SP:");
+		DefSetSP=in.nextDouble();
+		System.out.println("def derivante dalla perfezuibe della SP:");
+		DefPerfezione=in.nextDouble();
+		System.out.println("def derivante dal se dei buff (no pet):");
+		DefBuff=in.nextDouble();
+		System.out.println("def del buff di pet in pvp:");
+		DefBuffPetPvP=in.nextDouble();
+		System.out.println("def del buff di pet generale:");
+		DefBuffPet=in.nextDouble();
+		System.out.println("def del vesisto Nosmall:");
+		DefVestitoNosmall=in.nextDouble();
+		System.out.println("danno migliorato (runa):");
+		AtkMigliorato=in.nextDouble();
+		System.out.println("difesa migliorata (runa):");
+		DefMigliorato=in.nextDouble();
+		System.out.println("% danno in pvp:");
+		AtkPvP=in.nextDouble();
+		if(AtkPvP>1) AtkPvP=AtkPvP/100;
+		System.out.println("% difesa in pvp:");
+		DefPvP=in.nextDouble();
+		if(DefPvP>1) DefPvP=DefPvP/100;
+		System.out.println("% difesa tot(runa):");
+		DefTotRuna=in.nextDouble();
+		if(DefTotRuna>1) DefTotRuna=DefTotRuna/100;
+		System.out.println("% riduzione difesa in pvp:");
+		RidDefPvP=in.nextDouble();
+		if(RidDefPvP>1) RidDefPvP=RidDefPvP/100;
+		System.out.println("% al danno:");
+		DannoTot=in.nextDouble();
+		if(DannoTot>1) DannoTot=DannoTot/100;
+		System.out.println("pg attaccante con olio (1=si/0=no):");
+		int olio1=in.nextInt();
+		System.out.println("pg difensore con olio (1=si/0=no):");
+		int olio2=in.nextInt();
+		System.out.println("% critico equip+SP+effetti equip+runa+skill:");
+		Critico=in.nextDouble();
+		if(Critico>5) Critico/=100;
+		System.out.println("% diminuzione critico equip+SP+effetti equip+runa+skill:");
+		DimCritico=in.nextDouble();
+		if(DimCritico>5) DimCritico/=100;
+		System.out.println("liv + morale attaccante:");
+		int moraleAtk=in.nextInt();
+		System.out.println("liv + morale difensore:");
+		int moraleDef=in.nextInt();
+		
+		
+		
+		double differenzaUp=UpArma-UpArmor;
+		if(differenzaUp<0) differenzaUp=-differenzaUp;
+		double AtkEqMin=AtkBaseEqMin*(1+differenzaUp);
+		double AtkEqMax=AtkBaseEqMax*(1+differenzaUp);
+		double DefEq=DefBaseEq*(1+differenzaUp);
+		
+		double AtkSetSPtot=AtkSetSP + BonusAtkSetSP + AtkPerfezione;
+		double AtkPgMin=(AtkEqMin+ AtkBasePg+ AtkEff + AtkSetSPtot + AtkMigliorato) * (1 + AtkPvP);  //atk tot del pg
+		double AtkPgMax=(AtkEqMax+ AtkBasePg+ AtkEff + AtkSetSPtot + AtkMigliorato) * (1 + AtkPvP);
+		
+		double DefSetSPTot=DefSetSP+ DefPerfezione;
+		double DefPg = (DefEq + DefBasePg + DefEff + DefSetSPTot + DefMigliorato) * (1 + (DefTotRuna + DefPvP - RidDefPvP));
+		
+		double AtkTotMin=((AtkPgMin + AtkSkill + 15) * (1 + (DannoTot /*+ % Danno Tipologia Di Mob*/))) * (1 + AumentoDannoEq /*- BuffAD1*/);
+		double AtkTotMax=((AtkPgMax + AtkSkill + 15) * (1 + (DannoTot /*+ % Danno Tipologia Di Mob*/))) * (1 + AumentoDannoEq /*- BuffAD1*/);
+		
+		double DefTot = (DefPg + DefBuff) * (1 + DefBuffPetPvP) * (1 + (/*Pozione Difesa + */DefVestitoNosmall + DefBuffPet + 0.05*olio2));
+		
+		double DifMorale=moraleAtk-moraleDef;
+		
+		double DannoMin = (AtkTotMin - DefTot) * (1 + 0.05*olio1);
+		double DannoMax = (AtkTotMax - DefTot) * (1 + 0.05*olio1);
+		
+		System.out.println("il danno è di : "+DannoMin+" - "+DannoMax );
+		
+		double DannoMinC=(DannoMax+DannoMin)/2;
+		double DannoCriticoMin = DannoMinC * (Critico -DimCritico);
+		double DannoCriticoMan = DannoMax * (Critico -DimCritico);
+		
+		
+		double DannoFinaleMin=
+	}
+
+}

@@ -1,0 +1,265 @@
+public class Main {
+		public static void main(String[] args) {
+		if(args.length<3) System.exit(0);
+		//uso algoritmo con direzioni random perchè solitamente fa passi minori rispetto a priorità decise a priori
+		//ma raramente non fa così quindi per sicurezza ne uso 2 e stampo quello più breve
+		//avrei potuto anche mettere un maggiorante alla lunghezza del percorso, ma ho notato che in alcune mappe 
+		//il calcolo diventa molto lungo o addirittura non finire più
+	      TrovaPercorso tp=new TrovaPercorso(Integer.parseInt(args[0]),Double.parseDouble(args[1]),Long.parseLong(args[2]));
+		  if(tp.cercaPercorso()==-1) System.out.println("Nessun Percorso!");
+		  else{
+		  TrovaPercorso tp2=new TrovaPercorso(Integer.parseInt(args[0]),Double.parseDouble(args[1]),Long.parseLong(args[2]));
+	      tp2.cercaPercorso();
+	      if(tp.getSteps()<tp2.getSteps()) tp.printRoute();
+	      else tp2.printRoute();}
+		}}
+    
+    
+    
+    
+    import java.util.ArrayList;
+import java.util.Random;
+
+public class TrovaPercorso {
+		private GridWorld.Direction priority1;
+		private GridWorld.Direction priority2;
+		private GridWorld.Direction priority3;
+		private GridWorld.Direction priority4;
+		private ArrayList<Grafo> route;
+		private int grid;
+		private double density;
+		private long seed;
+		private int steps;
+		private GridWorld.Coordinate last;
+		
+	public TrovaPercorso(int grid,double density,long seed){
+		this.grid=grid;
+		this.density=density;
+		this.seed=seed;
+		changePriority(); //inizializzo le priorità a random
+		this.steps=0;
+		}
+	
+	public int getSteps(){
+		return this.steps;
+	}
+	
+	private void changePriority(){
+		Random a=new Random();
+		switch(a.nextInt(4)){
+		case 0:{this.priority1=GridWorld.Direction.SOUTH;
+		this.priority2=GridWorld.Direction.EAST;
+		this.priority3=GridWorld.Direction.NORTH;
+		this.priority4=GridWorld.Direction.WEST;break;}
+		case 1:{this.priority1=GridWorld.Direction.EAST;
+		this.priority2=GridWorld.Direction.SOUTH;
+		this.priority3=GridWorld.Direction.WEST;
+		this.priority4=GridWorld.Direction.NORTH;break;}
+		case 2:{this.priority1=GridWorld.Direction.SOUTH;
+		this.priority2=GridWorld.Direction.EAST;
+		this.priority3=GridWorld.Direction.WEST;
+		this.priority4=GridWorld.Direction.NORTH;break;}
+		case 3:{this.priority1=GridWorld.Direction.EAST;
+		this.priority2=GridWorld.Direction.SOUTH;
+		this.priority3=GridWorld.Direction.NORTH;
+		this.priority4=GridWorld.Direction.WEST;break;}
+		}
+	}
+	
+	public int cercaPercorso(){
+		GridWorld gw = new GridWorld(grid,density,seed);
+		if(gw.getMinimumDistanceToTarget()==-1) return -1;
+	    GridWorld.Coordinate currentCell=gw.getCurrentCell();
+		route=new ArrayList<Grafo>();
+		Grafo node = null;
+		GridWorld.Direction precedente = null;
+		ArrayList<GridWorld.Coordinate> prohibitedCells= new ArrayList<GridWorld.Coordinate>();
+		while(!gw.targetReached()){
+			//inizializzo un nuovo nodo
+			GridWorld.Direction successivo=null;
+			node=new Grafo(currentCell,precedente);
+			route.add(node);
+		//aggiungo al nodo le direzioni successive senza le direzioni per tornare indietro
+			Iterable <GridWorld.Coordinate> prossimo=gw.getAdjacentFreeCells();
+		for(GridWorld.Coordinate i:prossimo){
+		    if (i.row-currentCell.row==1) {successivo=GridWorld.Direction.SOUTH;}
+		    else{if (i.row-currentCell.row==-1) {successivo=GridWorld.Direction.NORTH;}
+		         else{if (i.col-currentCell.col==1) {successivo=GridWorld.Direction.EAST;}
+		              else{if (i.col-currentCell.col==-1) {successivo=GridWorld.Direction.WEST;}}}}
+		 if(precedente==null || !successivo.equals(precedente)) node.addNext(i, successivo);}
+	
+		   //provo a muovermi confrontando la direzione presta in considerazione cn qll successivi del nodo
+		successivo=move(node,gw,successivo,precedente);
+	    changePriority();
+		currentCell=gw.getCurrentCell();
+		//finchè sono in una cella già contenuta nel percorso o contenuta nella lista delle celle proibite itero in questo 
+		//ciclo e faccio backtracking con successivo movimento
+		while (node.containsCycle(route, currentCell) || isProhibited(currentCell,prohibitedCells,gw)) {
+			GridWorld.Direction toDelete=node.ritornaUltimoNodoPoss(route,gw,prohibitedCells);
+		currentCell=gw.getCurrentCell();
+		route.get(route.size()-1).removeNextDirection(toDelete);
+		//provo a ripartire
+		node=new Grafo(route.get(route.size()-1));
+		successivo=move(node,gw,successivo,precedente);
+		changePriority();
+	    currentCell=gw.getCurrentCell();
+		}
+		precedente=node.reverse(successivo);
+		}
+	   last=currentCell;
+	   this.steps=route.size();
+	   return 0;
+		}
+		
+
+
+	private GridWorld.Direction move(Grafo nodo,GridWorld gw,GridWorld.Direction successivo,GridWorld.Direction precedente){
+		 if(nodo.isNext(priority1))
+			{gw.moveToAdjacentCell(priority1);
+	        successivo=priority1;}
+		    else {if(nodo.isNext(priority2)){
+			      gw.moveToAdjacentCell(priority2);
+		          successivo=priority2;}
+			      else {if(nodo.isNext(priority3)){
+				        gw.moveToAdjacentCell(priority3);
+			            successivo=priority3;}
+				        else {if(nodo.isNext(priority4)){
+					          gw.moveToAdjacentCell(priority4);
+				              successivo=priority4;}
+				              else gw.moveToAdjacentCell(precedente);}}}
+		 return successivo;
+	}
+	
+
+	public void printRoute(){
+		System.out.print("Percorso:");
+		for(int i=0;i<route.size();i++){
+		System.out.print(" "+route.get(i).getCurrent());}
+		System.out.println(" "+last/*+"\npassi:"+this.steps*/);
+	}
+	
+   //guarda se è nella lista proibita
+	private boolean isProhibited(GridWorld.Coordinate currentCell,ArrayList<GridWorld.Coordinate> prohibitedCells,GridWorld gw){
+		for(int i=0;i<prohibitedCells.size();i++)
+			if(prohibitedCells.get(i).equals(currentCell)) return true;	
+	return false;}
+}
+
+
+import java.util.ArrayList;
+
+public class Grafo {
+	private GridWorld.Direction previousDirection;
+	private GridWorld.Coordinate currentPosition;
+	private ArrayList<PossibleMove> nextMove=new ArrayList<PossibleMove>();
+	
+	//costruttore con param
+	public Grafo(GridWorld.Coordinate a,GridWorld.Direction p){
+	    this.currentPosition=a;
+	    this.previousDirection=p;
+	}
+	
+	//costruttore di copia
+	public Grafo(Grafo node){
+		this.previousDirection=node.previousDirection;
+		this.currentPosition=node.currentPosition;
+		this.nextMove=node.nextMove;
+	}
+	
+	public GridWorld.Coordinate getCurrent(){
+		return this.currentPosition;
+	}
+	
+	public void addNext(GridWorld.Coordinate p,GridWorld.Direction s){
+		PossibleMove seq=new PossibleMove();
+		seq.nextDirection=s;
+		seq.nextPosition=p;
+		nextMove.add(seq);
+	}
+	
+	public GridWorld.Direction reverse(GridWorld.Direction direction){
+		switch(direction.toString()){
+		case "SOUTH": return GridWorld.Direction.NORTH;
+		case "NORTH": return GridWorld.Direction.SOUTH;
+		case "EAST": return GridWorld.Direction.WEST;
+		case "WEST": return GridWorld.Direction.EAST;
+		default: return null;
+		}
+	}
+	
+	public boolean isNext(GridWorld.Direction dir){
+		for(int i=0;i<nextMove.size();i++){
+		if(nextMove.get(i).nextDirection.equals(dir)) {
+			return true;}}
+		return false;
+	}
+	
+	public boolean containsCycle(ArrayList<Grafo> route,GridWorld.Coordinate currentCell){
+		for(int i=0;i<route.size();i++) 
+			if(route.get(i).currentPosition.equals(currentCell)) {
+			return true;}
+		return false;
+	}
+	
+	
+	public void removeNextDirection(GridWorld.Direction dir){
+		for (int i=0;i<nextMove.size();i++){
+			if(nextMove.get(i).nextDirection.equals(dir)) nextMove.remove(i);
+		}}
+	
+	
+	public GridWorld.Direction ritornaUltimoNodoPoss(ArrayList<Grafo> route,GridWorld gw,ArrayList<GridWorld.Coordinate> prohibitedCells){
+		int token=0;
+		GridWorld.Direction dir=null;
+		GridWorld.Coordinate coordinata=gw.getCurrentCell();
+		//calcolo il primo passo per tornare all ultimo nodo del percorso
+			if (route.get(route.size()-1).currentPosition.row-coordinata.row==1) {dir=GridWorld.Direction.SOUTH;}
+		    else{if (route.get(route.size()-1).currentPosition.row-coordinata.row==-1) {dir=GridWorld.Direction.NORTH;}
+		    else{if (route.get(route.size()-1).currentPosition.col-coordinata.col==1) {dir=GridWorld.Direction.EAST;}
+		    else{if (route.get(route.size()-1).currentPosition.col-coordinata.col==-1) {dir=GridWorld.Direction.WEST;}}}}	
+			
+		//cerco l'ultimo nodo del percorso con almeno 2 direzioni successive (token) e cancello quello intrapreso per
+			// andare al nodo successivo
+		for(int i=route.size()-1;i>=0;i--) {
+			if(route.get(i).nextMove.size()>1) { 
+				token=i;
+				if(i<route.size()-1) 
+					{
+					for(int j=0;j<route.get(i).nextMove.size();j++){
+					if(route.get(i).nextMove.get(j).nextDirection.equals(reverse(route.get(i+1).previousDirection))) 
+					{
+							route.get(i).nextMove.remove(j);}}}
+				else {
+					for(int j=0;j<route.get(i).nextMove.size();j++){
+						if(route.get(i).nextMove.get(j).nextDirection.equals(reverse(dir))) 
+						{
+								route.get(i).nextMove.remove(j);}}}
+				 break;
+		}}
+		//faccio il percorso inverso fino a token ed elimino tutti i nodi successivi, e aggiungo la cella di token+1 alla
+		//lista delle celle proibite
+		GridWorld.Direction toDelete;
+		gw.moveToAdjacentCell(dir); 
+	if(token<route.size()-1)	toDelete=reverse(route.get(token+1).previousDirection);
+	else {return reverse(dir);}
+		
+		if(token<route.size()-1 && !prohibitedCells.contains(route.get(token+1).currentPosition)) prohibitedCells.add(route.get(token+1).currentPosition);
+		for(int i=route.size()-1;i>token;i--){//ritorno fino al punto tok
+			gw.moveToAdjacentCell(route.get(i).previousDirection);
+			route.remove(i);
+		}
+		return toDelete;
+	}
+	
+
+	public class PossibleMove{
+		public GridWorld.Coordinate nextPosition;
+		public GridWorld.Direction nextDirection;
+		
+		public PossibleMove(){
+			this.nextPosition=null;
+			this.nextDirection=null;
+		}
+	}
+
+}

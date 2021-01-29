@@ -1,0 +1,272 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Scanner;
+
+public class Main {
+
+	
+	public static void main(String Args[]) throws IOException{
+		
+		BufferedReader br=new BufferedReader(new FileReader("/Users/A/workspace/Homework3/src/file.txt"));
+		Scanner in=new Scanner(br);
+		StatementList sl=new StatementList();
+		while(in.hasNextLine()) {//aggiungo le righe non vuote
+			String row=in.nextLine();
+			if(!row.equals(""))
+			sl.add(row);}
+		
+		sl.divideStatement();
+	
+		in.close();
+	}
+}
+
+
+
+
+
+
+
+
+import java.util.ArrayList;
+
+public class StatementList {
+private ArrayList<String> statement;
+
+public StatementList(){
+	statement=new ArrayList<String>();
+}
+
+public void add(String statement){
+	this.statement.add(statement);
+	
+}
+public void print(){
+	for(int i=0;i<statement.size();i++) System.out.println(statement.get(i));
+}
+
+public void divideStatement(){
+	for (int i=0;i<statement.size();i++) {
+	Statement st=new Statement();
+	String data=statement.get(i);
+	String[] items=data.split(" ");
+	for(String item:items) {
+		if(!item.equals("")) st.add(item); //aggiungo se non è uno spazio
+	}
+	st.print();
+	st.parse();
+	}
+	
+}
+	
+}
+
+
+
+
+
+
+
+
+
+import java.util.ArrayList;
+
+public class Statement {
+
+private	ArrayList<String> state;
+private int numOperatori;
+
+public Statement(){
+	state=new ArrayList<String>();
+}
+
+public void add(String state){
+	this.state.add(state);
+}
+
+public void print(){
+	System.out.println("nello statement ho: "+state);
+}
+
+public void parse(){
+	contaOperatori();
+	VariableDef vd=new VariableDef();
+	while(numOperatori>0){
+		numOperatori=0;
+		ArrayList<String> subExpression=new ArrayList<String>();
+		
+	for (int i=0;i<state.size();i++) {
+		if(state.get(i).equals("(MUL") || state.get(i).equals("(ADD") || state.get(i).equals("(DIV") ||
+				state.get(i).equals("(SUB") || state.get(i).equals("(GET") || state.get(i).equals("(SET")) {numOperatori++;
+				//System.out.println("trovato 1 operatore");
+		subExpression.clear();		
+		}
+		subExpression.add(state.get(i));
+		if(subExpression.size()==3) {
+			//System.out.println("ho trovato l operatore chiusura");
+			if(subExpression.get(0).equals("(MUL") || subExpression.get(0).equals("(ADD") || subExpression.get(0).equals("(DIV") || subExpression.get(0).equals("(SUB")){
+				Expression exp=new Expression();
+			    for(int j=0;j<subExpression.size();j++) exp.add(subExpression.get(j));
+			    sostExpression(subExpression,exp,vd);
+			    numOperatori--;
+			    break;}
+			if(subExpression.get(0).equals("(SET")){
+				vd.defineNew(subExpression.get(1), Long.parseLong(subExpression.get(2).substring(0, subExpression.get(2).length()-1)));
+				//System.out.println("set");
+				numOperatori--;
+				System.out.println("*****settato");
+				System.out.println(subExpression.get(1)+"="+vd.findVarValue(subExpression.get(1)));
+				break;
+			}}
+	
+		if(subExpression.size()==2) {
+			if(subExpression.get(0).equals("(GET")){
+				//System.out.println("get");
+				sostGet(subExpression);
+				numOperatori--;
+				System.out.println("*****risolto: "+state);
+			    break;}
+		}
+	}}
+	
+}
+
+private void sostExpression(ArrayList<String> subExpression,Expression exp,VariableDef vd){
+	int index=-1;
+	for(int i=state.size()-1;i>=0;i--) if(subExpression.get(0).equals(state.get(i))) index=i;
+	state.set(index, exp.solveExpression(vd));
+	state.remove(index+1);
+	state.remove(index+1);
+	print();
+}
+
+private void sostGet(ArrayList<String> subExpression){
+	int index=-1;
+	for(int i=state.size()-1;i>=0;i--) if(subExpression.get(0).equals(state.get(i))) index=i;
+	state.set(index, subExpression.get(1).substring(0, subExpression.get(1).length()-1));
+	state.remove(index+1);
+	print();
+}
+
+private void contaOperatori(){
+	for (int i=0;i<state.size();i++) {
+		if(state.get(i).equals("(MUL") || state.get(i).equals("(ADD") || state.get(i).equals("(DIV") ||
+				state.get(i).equals("(SUB") || state.get(i).equals("(GET") || state.get(i).equals("(SET")) numOperatori++;
+	}
+}
+}
+
+
+
+
+
+
+
+
+
+import java.util.ArrayList;
+
+public class VariableDef {
+private static ArrayList<Variable> variableList=new ArrayList<Variable>();;
+
+public VariableDef(){
+}
+
+public void defineNew(String var,long value){
+   Variable v=new Variable(var,value);
+   if(variableList.isEmpty()) variableList.add(v);
+   for(int i=0;i<variableList.size();i++) {
+	  if(variableList.get(i).name.equals(var)) {variableList.get(i).value=value;break;}
+	  if(i==variableList.size() && !variableList.get(i).name.equals(var))  variableList.add(v);
+   }
+  
+}
+
+public long findVarValue(String var){
+	for(int i=0;i<variableList.size();i++){
+		if(var.equals(variableList.get(i).name)) return variableList.get(i).value;
+	}
+	return 0;
+}
+
+public void print(){
+	System.out.println(variableList);
+}
+
+public boolean contains(String var){
+	for(int i=0;i<variableList.size();i++) if(var.equals(variableList.get(i).name)) return true;
+	return false;
+}
+
+
+
+
+public class Variable {
+public String name;
+public long value;
+
+public Variable(String name,long value){
+	this.name=name;
+	this.value=value;
+}
+}
+}
+
+
+
+
+
+
+
+
+
+import java.util.ArrayList;
+
+public class Expression {
+
+	private ArrayList<String> expression;
+	
+	public Expression(){
+		expression=new ArrayList<String>();
+	}
+	
+	public void add(String exp){
+		expression.add(exp);
+	}
+	
+    public void print(){
+    	System.out.println(expression);
+    }
+    
+    public String solveExpression(VariableDef vd){
+    	long a,b;
+    	int chiusure=0;
+    	if(vd.contains(expression.get(1))) a=vd.findVarValue(expression.get(1));
+		else a=Long.parseLong(expression.get(1));
+    	char lettera;
+    	String inpiu="";
+    	for(int i=expression.get(2).length()-1;i>0;i--)
+    	  {lettera=expression.get(2).charAt(i);
+    	  if(lettera!=')') break;
+    	  chiusure++; }
+    	//System.out.println("ci sono "+chiusure+" parentesi");
+    	ArrayList<Character> z=new ArrayList<Character>();
+    	for(int i=0;i<chiusure-1;i++) z.add(')');
+    	inpiu=z.toString();
+    	//System.out.println("in piu è: "+inpiu.substring(1, inpiu.length()-1));
+    	String e=expression.get(2).substring(0, expression.get(2).length()-chiusure);
+    	//System.out.println("il n e:"+e);
+		if(vd.contains(e)) b=vd.findVarValue(e);
+		else b=Long.parseLong(e);
+    	Long result = null;
+    	if(expression.get(0).equals("(MUL")) {System.out.println("moltiplico "+a+" e "+b);result=a*b;}
+    	if(expression.get(0).equals("(ADD")) {System.out.println("sommo "+a+" e "+b);result=a+b;}
+    	if(expression.get(0).equals("(DIV")) {System.out.println("divido "+a+" e "+b);result=a/b;}
+    	if(expression.get(0).equals("(SUB")) {System.out.println("sottraggo "+a+" e "+b);result=a-b;}
+    	System.out.println(result);
+    	//System.out.println("risultato:"+result.toString().concat(inpiu.substring(1, inpiu.length()-1)));
+    return result.toString().concat(inpiu.substring(1, inpiu.length()-1));
+    }
+}
+
